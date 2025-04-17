@@ -1,0 +1,12 @@
+namespace: monitoring-system-dev
+
+resources:
+- deployment.yaml
+
+secretGenerator:
+- name: mc-credentials
+  options:
+    disableNameSuffixHash: true
+  files:
+  - etc/.secrets/access_key
+  - etc/.secrets/secret_key
