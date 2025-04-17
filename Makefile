@@ -41,3 +41,5 @@ black:
 
 clean: clean-secrets clean-venv
 
+try:
+	$(VENV_DIR)/bin/python s3-bucket-usage-exporter.py
