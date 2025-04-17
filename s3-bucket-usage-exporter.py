@@ -29,28 +29,27 @@ def mc_du(path):
     return exe( command=("mc", "du", path, "--json") )
 
 def generateTree( q: deque, depth: int ) -> str:
-
-    if len(q) == 0:
+    root = q[0] # remember start point
+    if depth == 0:
         return
-    current = q[0]
-    q.popleft()
-    
-    # run mc ls on current path and separate objects into list
-    retcode, results, stderr = mc_ls(current)
-    if retcode == 0:
-        # queue up new paths
-        for data in results:
-            nxt = data['key']
-            logger.debug(f"got {current} / {nxt}")
-            if nxt[-1] == '/':
-                full_next = current + nxt
-                if full_next.count('/') <= depth: # depth limit
-                    q.append(current + nxt)
-                    yield f"{current}{nxt}"
-    for item in generateTree( q, depth=depth ):
-        yield item
-
-   
+    while len(q) > 0:
+        current = q[0]
+        q.popleft()
+        
+        # run mc ls on current path and separate objects into list
+        retcode, results, stderr = mc_ls(current)
+        if retcode == 0:
+            # queue up new paths
+            for data in results:
+                nxt = data['key']
+                nxt_t = data['type'] # want folders only
+                logger.debug(f"got {current}{nxt}")
+                if nxt_t == "folder" and nxt != '/': # avoid files and '/' case
+                    full_next = current + nxt
+                    if full_next.count('/') - root.count('/') == depth:
+                        yield f"{current}{nxt}"
+                    if full_next.count('/') - root.count('/') < depth: # limit
+                        q.append(current + nxt)
 
 @click.command()
 @click.option(
