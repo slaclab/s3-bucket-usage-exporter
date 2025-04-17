@@ -31,6 +31,7 @@ def mc_du(path):
 def generateTree( q: deque, depth: int ) -> str:
     root = q[0] # remember start point
     if depth == 0:
+        yield q[0]
         return
     while len(q) > 0:
         current = q[0]
