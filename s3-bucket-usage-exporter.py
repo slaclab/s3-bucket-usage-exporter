@@ -10,52 +10,68 @@ from prometheus_client.core import GaugeMetricFamily, REGISTRY
 from loguru import logger
 import click
 
-def mc_ls(path):
-    command = ["mc", "ls", path, "--json"]
+from typing import List
+
+def exe( command: List[str] ):
     logger.info(f"running: {' '.join(command)}")
     result = subprocess.run(command, capture_output=True, text=True)
     logger.debug(f"parsed output: {result}")
-    return result
+    out = []
+    for obj in result.stdout.strip().split("\n"):
+        this = json.loads(obj)
+        out.append( this )
+    return result.returncode, out, result.stderr
 
-def generateTree( depth=1 ):
+def mc_ls(path):
+    return exe( command=("mc", "ls", path, "--json") )
+
+def mc_du(path):
+    return exe( command=("mc", "du", path, "--json") )
+
+def generateTree( q: deque, depth: int ) -> str:
+
     if len(q) == 0:
         return
     current = q[0]
     q.popleft()
     
     # run mc ls on current path and separate objects into list
-    result = mc_ls(current)
-    if result.stdout != '':
-        json_objects = result.stdout.strip().split('\n')
-
+    retcode, results, stderr = mc_ls(current)
+    if retcode == 0:
         # queue up new paths
-        for obj in json_objects:
-            data = json.loads(obj)
+        for data in results:
             nxt = data['key']
+            logger.debug(f"got {current} / {nxt}")
             if nxt[-1] == '/':
                 full_next = current + nxt
                 if full_next.count('/') <= depth: # depth limit
-                    paths.append(current + nxt)
                     q.append(current + nxt)
-    generateTree( depth )
+                    yield f"{current}{nxt}"
+    for item in generateTree( q, depth=depth ):
+        yield item
 
    
 
-root = "rubin-embs3/"
-paths = list()
-paths.append(root)
-q = deque()
-q.append(root)
-
 @click.command()
+@click.option(
+  "--bucket_alias",
+  default="rubin-embs3/",
+  show_default=True,
+  help="mc bucket alias name"
+)
 @click.option(
   "--depth",
   default=1,
   show_default=True,
   help="scanning depth of directory"
 )
-def main( depth ):
-    generateTree( depth )
+def main( bucket_alias, depth ):
+
+    Q = deque()
+    Q.append( bucket_alias )
+    logger.info(f"First Q: {Q}")
+    for path in generateTree( Q, depth ):
+       logger.warning(f"need to du {path}")
 
 if __name__ == "__main__":
     main( )
