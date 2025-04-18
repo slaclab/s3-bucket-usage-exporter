@@ -37,8 +37,7 @@ class S3Metrics:
         q = deque()
         for item in self.bucket_alias:
             logger.info(f"Item: {item}")
-            
-
+            q.append(item) # also scan parent
             # get children
             retcode, results, stderr = mc_ls(item)
             if retcode == 0:
@@ -50,12 +49,15 @@ class S3Metrics:
                         full_next = item + nxt
                         if full_next.count('/') - item.count('/') <= self.depth: 
                             q.append(full_next)
+        scanned = dict()
         for item in q:
             # get size data
-            retcode, results, stderr = mc_du(item)
-            prefix = results[0]['prefix']
-            size = results[0]['size']
-            self.s3_usage_metric.add_metric([prefix], size)
+            if item not in scanned:
+                retcode, results, stderr = mc_du(item)
+                prefix = results[0]['prefix']
+                size = results[0]['size']
+                self.s3_usage_metric.add_metric([prefix], size)
+                scanned[item] = size
 
             
             #if size > self.size_minimum:
