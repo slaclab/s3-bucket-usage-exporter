@@ -98,9 +98,23 @@ def mc_du(path):
   show_default=True,
   help="scanning depth of directory"
 )
+@click.option(
+  "--port",
+  default=8000,
+  show_default=True,
+  help="port number to expose metrics for prometheus scrapes"
+)
+@click.option(
+  "--sleep",
+  default=3600,
+  show_default=True
+  help="periodicity of collecting usage information"
+)
 def main( bucket_alias, depth, port, sleep ):
+
     s3_metrics = S3Metrics(bucket_alias=bucket_alias, depth=depth, sleep=sleep )
     REGISTRY.register( s3_metrics ) # triggers collect method
+    logger.info(f"starting webserver on port {port} for {bucket_alias}: using depth {depth} with polling periodicity of {sleep}")
     start_http_server(port)
     s3_metrics.run_metrics_loop()
 
