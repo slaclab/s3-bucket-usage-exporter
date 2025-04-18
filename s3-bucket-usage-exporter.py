@@ -13,30 +13,36 @@ import click
 
 from typing import List
 
-
-SLEEP = int(os.environ.get("S3_COLLECTOR_INTERVAL", 86400)) 
+SLEEP = int(os.environ.get("S3_COLLECTOR_INTERVAL", 60)) 
 PORT = int(os.environ.get("S3_COLLECTOR_PORT", 8000))
 
 class S3Metrics:
     def __init__(self, bucket_alias, depth):
         self.bucket_alias = bucket_alias
         self.depth = depth
-        print(self.bucket_alias)
-        print(self.depth)
+        self.reset_metrics()
+
+    def reset_metrics(self):
         self.s3_usage_metric = GaugeMetricFamily(
                                     's3_bucket_usage',
                                     'Size of data on path in s3',
                                     labels=["prefix", "size"]
                                 )
-        print(type(self.s3_usage_metric))
+
+    def run_metrics_loop(self):
+        self.reset_metrics()
+        while(True):
+            self.fetch()
+            time.sleep(SLEEP)
+
+    def fetch(self):
+        r = test_path()
+        prefix = r[0]['prefix'] 
+        size = r[0]['size']
+        self.s3_usage_metric.add_metric(prefix, size)
 
     def collect(self):
-        paths = list()
-        for path in generateTree( self.bucket_alias, self.depth ):
-            logger.warning(f"need to du {path}")
-            paths.append(path) 
-        for path in paths:
-            yield self.s3_usage_metric.add_metric([path, aggregateUsage(path)])
+        yield self.s3_usage_metric
 
 def exe( command: List[str] ):
     logger.info(f"running: {' '.join(command)}")
@@ -54,37 +60,12 @@ def mc_ls(path):
 def mc_du(path):
     return exe( command=("mc", "du", path, "--json") )
 
-def generateTree( root : str, depth: int ) -> str:
-    q = deque()
-    q.append( root )
-    logger.info(f"First Q: {q}")
 
-    if depth == 0:
-        yield q[0]
-        return
-    while len(q) > 0:
-        current = q[0]
-        q.popleft()
-        
-        # run mc ls on current path and separate objects into list
-        retcode, results, stderr = mc_ls(current)
-        if retcode == 0:
-            # queue up new paths
-            for data in results:
-                nxt = data['key']
-                nxt_t = data['type'] # want folders only
-                logger.debug(f"got {current}{nxt}")
-                if nxt_t == "folder" and nxt != '/': # avoid files and '/' case
-                    full_next = current + nxt
-                    if full_next.count('/') - root.count('/') == depth:
-                        yield f"{current}{nxt}"
-                    if full_next.count('/') - root.count('/') < depth: # limit
-                        q.append(current + nxt)
-
-def aggregateUsage(path):
+def test_path():
+    path = "rubin-embs3/rubin-summit-users/LSSTComCam/runs/DRP/DP1-RC1/w_2025_02/DM-48371/hips/deep/"
     retcode, results, stderr = mc_du(path)
-    return results[0]['size'] # one element list
-        
+    return results
+
 @click.command()
 @click.option(
   "--bucket_alias",
@@ -100,16 +81,10 @@ def aggregateUsage(path):
 )
 def main( bucket_alias, depth ):
 
-    print(bucket_alias)
-    print(depth)
     s3_metrics = S3Metrics(bucket_alias, depth)
-    print("before registry")
     REGISTRY.register( s3_metrics )
-    print("after registry")
     start_http_server(PORT)
-        
-    while True:
-        time.sleep(SLEEP)
+    s3_metrics.run_metrics_loop()
 
 if __name__ == "__main__":
     main()
