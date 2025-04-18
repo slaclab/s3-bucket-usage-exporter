@@ -13,13 +13,11 @@ import click
 
 from typing import List
 
-SLEEP = int(os.environ.get("S3_COLLECTOR_INTERVAL", 60)) 
-PORT = int(os.environ.get("S3_COLLECTOR_PORT", 8000))
-
 class S3Metrics:
-    def __init__(self, bucket_alias, depth):
+    def __init__(self, bucket_alias: str, depth: int, sleep: int=300):
         self.bucket_alias = bucket_alias
         self.depth = depth
+        self.sleep = sleep
         self.reset_metrics()
 
     def reset_metrics(self):
@@ -33,7 +31,7 @@ class S3Metrics:
         self.reset_metrics()
         while(True):
             self.fetch()
-            time.sleep(SLEEP)
+            time.sleep(self.sleep)
 
     def fetch(self):
         r = test_path()
@@ -79,15 +77,28 @@ def test_path():
   show_default=True,
   help="scanning depth of directory"
 )
-def main( bucket_alias, depth ):
+@click.option(
+  "--port",
+  default=8000,
+  show_default=True,
+  help="port number to expose metrics for prometheus scrapes"
+)
+@click.option(
+  "--sleep",
+  default=3600,
+  show_default=True,
+  help="periodicity of collecting usage information"
+)
+def main( bucket_alias, depth, port, sleep ):
 
-    s3_metrics = S3Metrics(bucket_alias, depth)
+    s3_metrics = S3Metrics( bucket_alias=bucket_alias, depth=depth, sleep=sleep )
     REGISTRY.register( s3_metrics )
-    start_http_server(PORT)
+    logger.info(f"starting webserver on port {port} for {bucket_alias}: using depth {depth} with polling periodicity of {sleep}")
+    start_http_server(port)
     s3_metrics.run_metrics_loop()
 
 if __name__ == "__main__":
-    main()
+    main( auto_envvar_prefix="S3_BUCKET_USAGE" )
 
 
 
