@@ -34,15 +34,30 @@ class S3Metrics:
             time.sleep(self.sleep)
 
     def fetch(self):
+        q = deque()
         for item in self.bucket_alias:
             logger.info(f"Item: {item}")
+            
 
+            # get children
+            retcode, results, stderr = mc_ls(item)
+            if retcode == 0:
+                for data in results:
+                    nxt = data['key']
+                    nxt_t = data['type'] # want folders only
+                    logger.debug(f"got {item}{nxt}")
+                    if nxt_t == "folder" and nxt != '/': # avoid '/' case
+                        full_next = item + nxt
+                        if full_next.count('/') - item.count('/') <= self.depth: 
+                            q.append(full_next)
+        for item in q:
             # get size data
             retcode, results, stderr = mc_du(item)
             prefix = results[0]['prefix']
             size = results[0]['size']
             self.s3_usage_metric.add_metric([prefix], size)
 
+            
             #if size > self.size_minimum:
             #    retcode, results, stderr = mc_ls(current)
             #    if retcode == 0:
