@@ -13,6 +13,10 @@ import click
 
 from typing import List
 
+SLEEP = int(os.environ.get("S3_COLLECTOR_INTERVAL", 60)) 
+PORT = int(os.environ.get("S3_COLLECTOR_PORT", 8000))
+MIN_SIZE = int(os.environ.get("S3_MIN_SIZE", 15000000000)) # 15gb
+
 class S3Metrics:
     def __init__(self, bucket_alias: str, depth: int, sleep: int=300):
         self.bucket_alias = bucket_alias
@@ -34,10 +38,33 @@ class S3Metrics:
             time.sleep(self.sleep)
 
     def fetch(self):
-        r = test_path()
-        prefix = r[0]['prefix'] 
-        size = r[0]['size']
-        self.s3_usage_metric.add_metric(prefix, size)
+        q = deque()
+        q.append(self.bucket_alias)
+        logger.info(f"first Q: {q}")
+
+        while len(q) > 0:
+            current = q[-1] 
+            q.pop()
+            
+            # get size data
+            retcode, results, stderr = mc_du(current)
+            prefix = results[0]['prefix']
+            size = results[0]['size']
+            self.s3_usage_metric.add_metric([prefix], size)
+
+            # if > 1 tb, queue up children
+            if size > MIN_SIZE:
+                retcode, results, stderr = mc_ls(current)
+                if retcode == 0:
+                    for data in results:
+                        nxt = data['key']
+                        nxt_t = data['type'] # want folders only
+                        logger.debug(f"got {current}{nxt}")
+                        if nxt_t == "folder" and nxt != '/': # avoid '/' case
+                            logger.debug(f"queue up {current}{next}")
+                            full_next = current + nxt
+                            q.append(full_next)
+                            # don't worry about depth for now
 
     def collect(self):
         yield self.s3_usage_metric
@@ -58,12 +85,6 @@ def mc_ls(path):
 def mc_du(path):
     return exe( command=("mc", "du", path, "--json") )
 
-
-def test_path():
-    path = "rubin-embs3/rubin-summit-users/LSSTComCam/runs/DRP/DP1-RC1/w_2025_02/DM-48371/hips/deep/"
-    retcode, results, stderr = mc_du(path)
-    return results
-
 @click.command()
 @click.option(
   "--bucket_alias",
@@ -77,28 +98,14 @@ def test_path():
   show_default=True,
   help="scanning depth of directory"
 )
-@click.option(
-  "--port",
-  default=8000,
-  show_default=True,
-  help="port number to expose metrics for prometheus scrapes"
-)
-@click.option(
-  "--sleep",
-  default=3600,
-  show_default=True,
-  help="periodicity of collecting usage information"
-)
 def main( bucket_alias, depth, port, sleep ):
-
-    s3_metrics = S3Metrics( bucket_alias=bucket_alias, depth=depth, sleep=sleep )
-    REGISTRY.register( s3_metrics )
-    logger.info(f"starting webserver on port {port} for {bucket_alias}: using depth {depth} with polling periodicity of {sleep}")
+    s3_metrics = S3Metrics(bucket_alias=bucket_alias, depth=depth, sleep=sleep )
+    REGISTRY.register( s3_metrics ) # triggers collect method
     start_http_server(port)
     s3_metrics.run_metrics_loop()
 
 if __name__ == "__main__":
-    main( auto_envvar_prefix="S3_BUCKET_USAGE" )
+    main( auto_envvar_prefix="S3_BUCKET_USAGE")
 
 
 
