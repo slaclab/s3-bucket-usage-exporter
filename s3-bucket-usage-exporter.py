@@ -13,12 +13,8 @@ import click
 
 from typing import List
 
-SLEEP = int(os.environ.get("S3_COLLECTOR_INTERVAL", 60)) 
-PORT = int(os.environ.get("S3_COLLECTOR_PORT", 8000))
-MIN_SIZE = int(os.environ.get("S3_MIN_SIZE", 15000000000)) # 15gb
-
 class S3Metrics:
-    def __init__(self, bucket_alias: str, depth: int, sleep: int=300):
+    def __init__(self, bucket_alias: List[str], depth: int, sleep: int=300):
         self.bucket_alias = bucket_alias
         self.depth = depth
         self.sleep = sleep
@@ -38,33 +34,27 @@ class S3Metrics:
             time.sleep(self.sleep)
 
     def fetch(self):
-        q = deque()
-        q.append(self.bucket_alias)
-        logger.info(f"first Q: {q}")
+        for item in self.bucket_alias:
+            logger.info(f"Item: {item}")
 
-        while len(q) > 0:
-            current = q[-1] 
-            q.pop()
-            
             # get size data
-            retcode, results, stderr = mc_du(current)
+            retcode, results, stderr = mc_du(item)
             prefix = results[0]['prefix']
             size = results[0]['size']
             self.s3_usage_metric.add_metric([prefix], size)
 
-            # if > 1 tb, queue up children
-            if size > MIN_SIZE:
-                retcode, results, stderr = mc_ls(current)
-                if retcode == 0:
-                    for data in results:
-                        nxt = data['key']
-                        nxt_t = data['type'] # want folders only
-                        logger.debug(f"got {current}{nxt}")
-                        if nxt_t == "folder" and nxt != '/': # avoid '/' case
-                            logger.debug(f"queue up {current}{next}")
-                            full_next = current + nxt
-                            q.append(full_next)
-                            # don't worry about depth for now
+            #if size > self.size_minimum:
+            #    retcode, results, stderr = mc_ls(current)
+            #    if retcode == 0:
+            #        for data in results:
+            #            nxt = data['key']
+            #            nxt_t = data['type'] # want folders only
+            #            logger.debug(f"got {current}{nxt}")
+            #            if nxt_t == "folder" and nxt != '/': # avoid '/' case
+            #                logger.debug(f"queue up {current}{next}")
+            #                full_next = current + nxt
+            #                q.append(full_next)
+            #                # don't worry about depth for now
 
     def collect(self):
         yield self.s3_usage_metric
@@ -72,7 +62,7 @@ class S3Metrics:
 def exe( command: List[str] ):
     logger.info(f"running: {' '.join(command)}")
     result = subprocess.run(command, capture_output=True, text=True)
-    logger.debug(f"parsed output: {result}")
+    #logger.debug(f"parsed output: {result}")
     out = []
     for obj in result.stdout.strip().split("\n"):
         this = json.loads(obj)
@@ -88,7 +78,8 @@ def mc_du(path):
 @click.command()
 @click.option(
   "--bucket_alias",
-  default="rubin-embs3/",
+  multiple=True,
+  default=["rubin-embs3/"],
   show_default=True,
   help="mc bucket alias name"
 )
@@ -107,7 +98,7 @@ def mc_du(path):
 @click.option(
   "--sleep",
   default=3600,
-  show_default=True
+  show_default=True,
   help="periodicity of collecting usage information"
 )
 def main( bucket_alias, depth, port, sleep ):
