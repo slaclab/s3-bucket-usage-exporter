@@ -3,6 +3,7 @@
 import os
 import subprocess
 import json
+import time
 from collections import deque
 from prometheus_client import start_http_server, Summary, REGISTRY
 from prometheus_client.core import GaugeMetricFamily, REGISTRY
@@ -11,6 +12,31 @@ from loguru import logger
 import click
 
 from typing import List
+
+
+SLEEP = int(os.environ.get("S3_COLLECTOR_INTERVAL", 86400)) 
+PORT = int(os.environ.get("S3_COLLECTOR_PORT", 8000))
+
+class S3Metrics:
+    def __init__(self, bucket_alias, depth):
+        self.bucket_alias = bucket_alias
+        self.depth = depth
+        print(self.bucket_alias)
+        print(self.depth)
+        self.s3_usage_metric = GaugeMetricFamily(
+                                    's3_bucket_usage',
+                                    'Size of data on path in s3',
+                                    labels=["prefix", "size"]
+                                )
+        print(type(self.s3_usage_metric))
+
+    def collect(self):
+        paths = list()
+        for path in generateTree( self.bucket_alias, self.depth ):
+            logger.warning(f"need to du {path}")
+            paths.append(path) 
+        for path in paths:
+            yield self.s3_usage_metric.add_metric([path, aggregateUsage(path)])
 
 def exe( command: List[str] ):
     logger.info(f"running: {' '.join(command)}")
@@ -28,8 +54,11 @@ def mc_ls(path):
 def mc_du(path):
     return exe( command=("mc", "du", path, "--json") )
 
-def generateTree( q: deque, depth: int ) -> str:
-    root = q[0] # remember start point
+def generateTree( root : str, depth: int ) -> str:
+    q = deque()
+    q.append( root )
+    logger.info(f"First Q: {q}")
+
     if depth == 0:
         yield q[0]
         return
@@ -52,6 +81,10 @@ def generateTree( q: deque, depth: int ) -> str:
                     if full_next.count('/') - root.count('/') < depth: # limit
                         q.append(current + nxt)
 
+def aggregateUsage(path):
+    retcode, results, stderr = mc_du(path)
+    return results[0]['size'] # one element list
+        
 @click.command()
 @click.option(
   "--bucket_alias",
@@ -67,14 +100,19 @@ def generateTree( q: deque, depth: int ) -> str:
 )
 def main( bucket_alias, depth ):
 
-    Q = deque()
-    Q.append( bucket_alias )
-    logger.info(f"First Q: {Q}")
-    for path in generateTree( Q, depth ):
-       logger.warning(f"need to du {path}")
+    print(bucket_alias)
+    print(depth)
+    s3_metrics = S3Metrics(bucket_alias, depth)
+    print("before registry")
+    REGISTRY.register( s3_metrics )
+    print("after registry")
+    start_http_server(PORT)
+        
+    while True:
+        time.sleep(SLEEP)
 
 if __name__ == "__main__":
-    main( )
+    main()
 
 
 
