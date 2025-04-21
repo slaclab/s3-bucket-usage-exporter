@@ -8,14 +8,28 @@ from collections import deque
 from prometheus_client import start_http_server, Summary, REGISTRY
 from prometheus_client.core import GaugeMetricFamily, REGISTRY
 
+from functools import wraps
 from loguru import logger
 import click
 
 from typing import List
 
+def timeit(func):
+    @wraps(func)
+    def timeit_wrapper(*args, **kwargs):
+        start_time = time.perf_counter()
+        result = func(*args, **kwargs)
+        end_time = time.perf_counter()
+        total_time = end_time - start_time
+        print(f"Function {func.__name__}{args} {kwargs} took {total_time:.4f} seconds")
+        return result
+    return timeit_wrapper
+
 class S3Metrics:
-    def __init__(self, bucket_alias: List[str], depth: List[int], sleep: int=300):
+    def __init__(self, bucket_alias: str, paths: List[str], depth: int, sleep: int=300):
         self.bucket_alias = bucket_alias
+        self.paths = paths
+        self.paths = [bucket_alias + p for p in self.paths] # add bucket prefix
         self.depth = depth
         self.sleep = sleep
         self.reset_metrics()
@@ -35,9 +49,8 @@ class S3Metrics:
 
     def fetch(self):
         q = deque()
-        for item in self.bucket_alias:
+        for item in self.paths:
             logger.info(f"Item: {item}")
-            q.append(item) # also scan parent
             # get children
             retcode, results, stderr = mc_ls(item)
             if retcode == 0:
@@ -89,21 +102,27 @@ def exe( command: List[str] ):
 def mc_ls(path):
     return exe( command=("mc", "ls", path, "--json") )
 
+@timeit
 def mc_du(path):
     return exe( command=("mc", "du", path, "--json") )
 
 @click.command()
 @click.option(
   "--bucket_alias",
+  default="rubin-embs3/",
+  show_default=True,
+  help="mc bucket alias name"
+)
+@click.option(
+  "--paths",
   multiple=True,
-  default=["rubin-embs3/"],
+  default=["/"],
   show_default=True,
   help="mc bucket alias name"
 )
 @click.option(
   "--depth",
-  multiple=True,
-  default=[1],
+  default=1,
   show_default=True,
   help="scanning depth of directory"
 )
@@ -119,9 +138,9 @@ def mc_du(path):
   show_default=True,
   help="periodicity of collecting usage information"
 )
-def main( bucket_alias, depth, port, sleep ):
+def main( bucket_alias, paths, depth, port, sleep ):
 
-    s3_metrics = S3Metrics(bucket_alias=bucket_alias, depth=depth, sleep=sleep )
+    s3_metrics = S3Metrics(bucket_alias=bucket_alias, paths=paths, depth=depth, sleep=sleep )
     REGISTRY.register( s3_metrics ) # triggers collect method
     logger.info(f"starting webserver on port {port} for {bucket_alias}: using depth {depth} with polling periodicity of {sleep}")
     start_http_server(port)
