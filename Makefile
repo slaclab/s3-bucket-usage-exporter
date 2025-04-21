@@ -4,7 +4,7 @@ SECRET_PATH ?= 'secret/scs/github/pat'
 PYTHON_EXE ?= python3.9
 VENV_DIR ?= ./.venv
 REPONAME ?= slaclab
-IMAGENAME ?= embargo-monitor
+IMAGENAME ?= s3-bucket-usage-exporter
 TAG ?= latest
 
 

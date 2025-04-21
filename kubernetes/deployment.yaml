@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: embargo-monitor
+  name: embargo-s3-monitor
   labels:
-    app: embargo-monitor
+    app: embargo-s3-monitor
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: embargo-monitor
+      app: embargo-s3-monitor
   template:
     metadata:
       labels:
-        app: embargo-monitor
+        app: embargo-s3-monitor
     spec:
       containers:
-      - name: embargo-monitor
-        image: slaclab/embargo-monitor:latest
+      - name: embargo-s3-monitor
+        image: slaclab/s3-bucket-usage-exporter:latest
         env:
         - name: bucket
           value: sdfembs3
@@ -30,4 +30,9 @@ spec:
             secretKeyRef:
               name: mc-credentials
               key: secret_key
+        - name: PATHS
+          valueFrom:
+            configMapKeyRef:
+              name: paths-config
+              key: PATHS
 

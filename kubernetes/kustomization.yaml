@@ -10,3 +10,9 @@ secretGenerator:
   files:
   - etc/.secrets/access_key
   - etc/.secrets/secret_key
+
+# comma separated list of paths
+configMapGenerator:
+  - name: paths-config
+    literals:
+      - PATHS=/rubin-summit-users/LSSTComCam/runs/DRP/DP1-RC1/w_2025_02/, rubin-summit-users/LSSTComCam/runs/DRP/DP1-RC1/w_2025_02/DM-48371/hips/deep/20250114T174846Z/deepCoadd_hpx/
