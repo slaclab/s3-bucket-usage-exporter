@@ -14,7 +14,7 @@ import click
 from typing import List
 
 class S3Metrics:
-    def __init__(self, bucket_alias: List[str], depth: int, sleep: int=300):
+    def __init__(self, bucket_alias: List[str], depth: List[int], sleep: int=300):
         self.bucket_alias = bucket_alias
         self.depth = depth
         self.sleep = sleep
@@ -102,7 +102,8 @@ def mc_du(path):
 )
 @click.option(
   "--depth",
-  default=1,
+  multiple=True,
+  default=[1],
   show_default=True,
   help="scanning depth of directory"
 )
