@@ -2,6 +2,8 @@ namespace: monitoring-system-dev
 
 resources:
 - deployment.yaml
+- service.yaml
+- serviceMonitor.yaml
 
 secretGenerator:
 - name: mc-credentials
