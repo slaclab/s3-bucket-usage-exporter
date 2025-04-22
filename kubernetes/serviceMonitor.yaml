@@ -1,0 +1,12 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: embargo-s3-monitor
+  labels:
+    release: sdf-k8s01
+spec:
+  selector:
+    matchLabels:
+      app: embargo-s3-monitor
+  endpoints:
+  - port: web

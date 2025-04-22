@@ -17,6 +17,9 @@ spec:
       containers:
       - name: embargo-s3-monitor
         image: slaclab/s3-bucket-usage-exporter:latest
+        ports:
+        - name: web
+          containerPort: 8000
         env:
         - name: bucket
           value: sdfembs3
@@ -35,4 +38,3 @@ spec:
             configMapKeyRef:
               name: paths-config
               key: PATHS
-
