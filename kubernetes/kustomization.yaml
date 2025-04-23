@@ -17,4 +17,7 @@ secretGenerator:
 configMapGenerator:
   - name: paths-config
     literals:
-      - PATHS=/rubin-summit-users/, /rubin-summit-users/LSSTComCam/runs/, /rubin-summit-users/u/
+      - PATHS= /rubin-summit-users/HSC/,
+               /rubin-summit-users/LSSTComCam/runs/,
+               /rubin-summit-users/u/
+      - DEPTHS= 0, 1, 1

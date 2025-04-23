@@ -38,3 +38,8 @@ spec:
             configMapKeyRef:
               name: paths-config
               key: PATHS
+        - name: DEPTHS
+          valueFrom:
+            configMapKeyRef:
+              name: paths-config
+              key: DEPTHS
