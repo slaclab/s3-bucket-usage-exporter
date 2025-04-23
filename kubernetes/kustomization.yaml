@@ -20,4 +20,3 @@ configMapGenerator:
       - PATHS= /rubin-summit-users/HSC/,
                /rubin-summit-users/LSSTComCam/runs/,
                /rubin-summit-users/u/
-      - DEPTHS= 0, 1, 1

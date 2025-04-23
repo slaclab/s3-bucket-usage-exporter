@@ -26,15 +26,11 @@ def timeit(func):
     return timeit_wrapper
 
 class S3Metrics:
-    def __init__(self, bucket_alias: str, path: List[str], depth: List[int], sleep: int=300):
+    def __init__(self, bucket_alias: str, path: List[str], depth: int, sleep: int=300):
         self.bucket_alias = bucket_alias
-
         self.path = path
         self.path = [bucket_alias + p for p in self.path] # add bucket prefix
         self.depth = depth
-        self.pairs = {p: d for p, d in zip(self.path, self.depth)} # pair path-depth
-        logger.info("printing pairs")
-        logger.info(self.pairs)
         self.sleep = sleep
         self.reset_metrics()
 
@@ -53,10 +49,8 @@ class S3Metrics:
 
     def fetch(self):
         q = deque()
-        for item in self.pairs:
+        for item in self.path:
             logger.info(f"Item: {item}")
-            if self.pairs[item] == 0:
-                q.append(item)
             # get children
             retcode, results, stderr = mc_ls(item)
             if retcode == 0:
@@ -66,7 +60,7 @@ class S3Metrics:
                     logger.debug(f"got {item}{nxt}")
                     if nxt_t == "folder" and nxt != '/': # avoid '/' case
                         full_next = item + nxt
-                        if full_next.count('/') - item.count('/') <= self.pairs[item]: 
+                        if full_next.count('/') - item.count('/') <= self.depth: 
                             q.append(full_next)
         scanned = dict()
         for item in q:
@@ -128,8 +122,7 @@ def mc_du(path):
 )
 @click.option(
   "--depth",
-  multiple=True,
-  default=[1],
+  default=1,
   show_default=True,
   help="scanning depth of directory"
 )
