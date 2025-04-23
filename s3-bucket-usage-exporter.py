@@ -42,7 +42,7 @@ class S3Metrics:
         self.s3_usage_metric = GaugeMetricFamily(
                                     's3_bucket_usage',
                                     'Size of data on path in s3',
-                                    labels=["prefix", "size"]
+                                    labels=["bucket", "prefix", "size"]
                                 )
 
     def run_metrics_loop(self):
@@ -75,7 +75,7 @@ class S3Metrics:
                 retcode, results, stderr = mc_du(item)
                 prefix = results[0]['prefix']
                 size = results[0]['size']
-                self.s3_usage_metric.add_metric([prefix], size)
+                self.s3_usage_metric.add_metric([self.bucket_alias, prefix], size)
                 scanned[item] = size
 
             
