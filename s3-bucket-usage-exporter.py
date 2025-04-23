@@ -38,7 +38,7 @@ class S3Metrics:
         self.s3_usage_metric = GaugeMetricFamily(
                                     's3_bucket_usage',
                                     'Size of data on path in s3',
-                                    labels=["bucket", "prefix", "units"]
+                                    labels=["bucket", "path", "units"]
                                 )
 
     def run_metrics_loop(self):
