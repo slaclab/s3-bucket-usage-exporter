@@ -38,7 +38,7 @@ class S3Metrics:
         self.s3_usage_metric = GaugeMetricFamily(
                                     's3_bucket_usage',
                                     'Size of data on path in s3',
-                                    labels=["bucket", "prefix", "size"]
+                                    labels=["bucket", "prefix", "units"]
                                 )
 
     def run_metrics_loop(self):
@@ -69,23 +69,9 @@ class S3Metrics:
                 retcode, results, stderr = mc_du(item)
                 prefix = results[0]['prefix']
                 size = results[0]['size']
-                self.s3_usage_metric.add_metric([self.bucket_alias, prefix], size)
+                self.s3_usage_metric.add_metric([self.bucket_alias, prefix, "bytes"], size)
                 scanned[item] = size
-
             
-            #if size > self.size_minimum:
-            #    retcode, results, stderr = mc_ls(current)
-            #    if retcode == 0:
-            #        for data in results:
-            #            nxt = data['key']
-            #            nxt_t = data['type'] # want folders only
-            #            logger.debug(f"got {current}{nxt}")
-            #            if nxt_t == "folder" and nxt != '/': # avoid '/' case
-            #                logger.debug(f"queue up {current}{next}")
-            #                full_next = current + nxt
-            #                q.append(full_next)
-            #                # don't worry about depth for now
-
     def collect(self):
         yield self.s3_usage_metric
 
@@ -139,7 +125,6 @@ def mc_du(path):
   help="periodicity of collecting usage information"
 )
 def main( bucket_alias, path, depth, port, sleep ):
-
     s3_metrics = S3Metrics(bucket_alias=bucket_alias, path=path, depth=depth, sleep=sleep )
     REGISTRY.register( s3_metrics ) # triggers collect method
     logger.info(f"starting webserver on port {port} for {bucket_alias}: using depth {depth} with polling periodicity of {sleep}")
