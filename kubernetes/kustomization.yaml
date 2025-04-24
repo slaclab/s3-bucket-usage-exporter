@@ -1,9 +1,9 @@
-namespace: monitoring-system-dev
+namespace: monitoring-system
 
 resources:
 - deployment.yaml
-- service.yaml
-- serviceMonitor.yaml
+#- service.yaml
+#- serviceMonitor.yaml
 
 secretGenerator:
 - name: mc-credentials
@@ -17,5 +17,11 @@ secretGenerator:
 configMapGenerator:
   - name: paths-config
     literals:
-      - PATHS= /rubin-summit-users/LSSTComCam/runs/DRP/DP1-RC1/w_2025_02/DM-48371/hips/deep/20250114T174846Z/deepCoadd_hpx/,
+      - PATHS= /rubin-summit-users/LATISS,
+               /rubin-summit-users/LSSTCam,
+               /rubin-summit-users/LSSTComCam,
+               /rubin-summit-users/LSSTComCam/runs,
+               /rubin-summit-users/LSSTComCamSim,
                /rubin-summit-users/u/
+
+

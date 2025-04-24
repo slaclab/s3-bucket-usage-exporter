@@ -9,6 +9,8 @@ for path in "${paths_array[@]}"; do
     script_args+=" --path $path"
 done
 
+script_args+=" --sleep $SLEEP_TIME"
+
 ./s3-bucket-usage-exporter.py $script_args
 
 while true; do sleep 5s; done

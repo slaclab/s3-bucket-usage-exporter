@@ -38,3 +38,5 @@ spec:
             configMapKeyRef:
               name: paths-config
               key: PATHS
+        - name: SLEEP_TIME
+          value: "86400"
