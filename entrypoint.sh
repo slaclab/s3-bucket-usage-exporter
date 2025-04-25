@@ -9,7 +9,7 @@ for path in "${paths_array[@]}"; do
     script_args+=" --path $path"
 done
 
-script_args+=" --sleep $SLEEP_TIME"
+script_args+=" --sleep $SLEEP_SCHEDULE"
 
 ./s3-bucket-usage-exporter.py $script_args
 

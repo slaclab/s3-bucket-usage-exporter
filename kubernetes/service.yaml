@@ -1,12 +1,12 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name: embargo-s3-monitor
+  name: embargo-s3-exporter
   labels:
-    app: embargo-s3-monitor
+    app: embargo-s3-exporter
 spec:
   selector:
-    app: embargo-s3-monitor
+    app: embargo-s3-exporter
   ports:
   - name: web
     port: 8000

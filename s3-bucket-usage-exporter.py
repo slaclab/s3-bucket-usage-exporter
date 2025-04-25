@@ -4,13 +4,15 @@ import os
 import subprocess
 import json
 import time
+import pytz
+import click
+from datetime import datetime
 from collections import deque
 from prometheus_client import start_http_server, Summary, REGISTRY
 from prometheus_client.core import GaugeMetricFamily, REGISTRY
 
 from functools import wraps
 from loguru import logger
-import click
 
 from typing import List
 
@@ -32,6 +34,7 @@ class S3Metrics:
         self.path = [bucket_alias + p for p in self.path] # add bucket prefix
         self.depth = depth
         self.sleep = sleep
+        self.pdt = pytz.timezone('America/Los_Angeles')
         self.reset_metrics()
 
     def reset_metrics(self):
@@ -43,9 +46,13 @@ class S3Metrics:
 
     def run_metrics_loop(self):
         self.reset_metrics()
+        self.fetch()
         while(True):
-            self.fetch()
-            time.sleep(self.sleep)
+            current_time = datetime.now(self.pdt) 
+            if current_time.hour == 10:
+                self.fetch()
+            else:
+                time.sleep(self.sleep)
 
     def fetch(self):
         q = deque()

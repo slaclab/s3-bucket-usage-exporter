@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: embargo-s3-monitor
+  name: embargo-s3-exporter
   labels:
-    app: embargo-s3-monitor
+    app: embargo-s3-exporter
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: embargo-s3-monitor
+      app: embargo-s3-exporter
   template:
     metadata:
       labels:
-        app: embargo-s3-monitor
+        app: embargo-s3-exporter
     spec:
       containers:
-      - name: embargo-s3-monitor
+      - name: embargo-s3-exporter
         image: slaclab/s3-bucket-usage-exporter:latest
         ports:
         - name: web
@@ -38,5 +38,5 @@ spec:
             configMapKeyRef:
               name: paths-config
               key: PATHS
-        - name: SLEEP_TIME
-          value: "86400"
+        - name: SLEEP_SCHEDULE
+          value: "3600"

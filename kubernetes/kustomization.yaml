@@ -1,4 +1,4 @@
-namespace: monitoring-system
+namespace: embargo-s3-exporter
 
 resources:
 - deployment.yaml
@@ -17,11 +17,11 @@ secretGenerator:
 configMapGenerator:
   - name: paths-config
     literals:
-      - PATHS= /rubin-summit-users/LATISS,
-               /rubin-summit-users/LSSTCam,
-               /rubin-summit-users/LSSTComCam,
-               /rubin-summit-users/LSSTComCam/runs,
-               /rubin-summit-users/LSSTComCamSim,
+      - PATHS= /rubin-summit-users/LATISS/,
+               /rubin-summit-users/LSSTCam/,
+               /rubin-summit-users/LSSTComCam/,
+               /rubin-summit-users/LSSTComCam/runs/,
+               /rubin-summit-users/LSSTComCamSim/,
                /rubin-summit-users/u/
 
 
