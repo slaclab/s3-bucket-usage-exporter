@@ -19,6 +19,7 @@ configMapGenerator:
     literals:
       - PATHS= /rubin-summit-users/LATISS/,
                /rubin-summit-users/LSSTCam/,
+               /rubin-summit-users/LSSTCam/runs/,
                /rubin-summit-users/LSSTComCam/,
                /rubin-summit-users/LSSTComCam/runs/,
                /rubin-summit-users/LSSTComCamSim/,
