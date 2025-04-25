@@ -12,5 +12,3 @@ spec:
   endpoints:
   - port: web
     path: /metrics
-  targetLabels:
-    - app
