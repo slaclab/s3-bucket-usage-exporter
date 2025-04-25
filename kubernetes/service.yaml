@@ -9,4 +9,6 @@ spec:
     app: embargo-s3-exporter
   ports:
   - name: web
+    protocol: TCP
     port: 8000
+    targetPort: 8000

@@ -2,8 +2,8 @@ namespace: embargo-s3-exporter
 
 resources:
 - deployment.yaml
-#- service.yaml
-#- serviceMonitor.yaml
+- service.yaml
+- serviceMonitor.yaml
 
 secretGenerator:
 - name: mc-credentials
