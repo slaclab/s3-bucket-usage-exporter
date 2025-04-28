@@ -74,10 +74,11 @@ class S3Metrics:
             # get size data
             if item not in scanned:
                 retcode, results, stderr = mc_du(item)
-                prefix = results[0]['prefix']
-                size = results[0]['size']
-                self.s3_usage_metric.add_metric([self.bucket_alias, prefix, "bytes"], size)
-                scanned[item] = size
+                if retcode == 0:
+                    prefix = results[0]['prefix']
+                    size = results[0]['size']
+                    self.s3_usage_metric.add_metric([self.bucket_alias, prefix, "bytes"], size)
+                    scanned[item] = size
             
     def collect(self):
         yield self.s3_usage_metric
