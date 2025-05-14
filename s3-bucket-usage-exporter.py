@@ -28,7 +28,7 @@ def timeit(func):
     return timeit_wrapper
 
 class S3Metrics:
-    def __init__(self, bucket_alias: str, path: List[str], depth: int, sleep: int=300):
+    def __init__(self, bucket_alias: str, path: List[str], depth: int, sleep: int=3600):
         self.bucket_alias = bucket_alias
         self.path = path
         self.path = [bucket_alias + p for p in self.path] # add bucket prefix
@@ -67,10 +67,11 @@ class S3Metrics:
                     logger.debug(f"got {item}{nxt}")
                     if nxt_t == "folder" and nxt != '/': # avoid '/' case
                         full_next = item + nxt
-                        if full_next.count('/') - item.count('/') <= self.depth: 
+                        if full_next.count('/') - item.count('/') <= self.depth and full_next not in self.path: 
                             q.append(full_next)
         scanned = dict()
-        for item in q:
+        sorted_paths = sorted(q, key=lambda path: path.count('/'), reverse=True)
+        for item in sorted_paths:
             # get size data
             if item not in scanned:
                 retcode, results, stderr = mc_du(item)
