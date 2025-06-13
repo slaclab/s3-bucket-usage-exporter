@@ -1,11 +1,11 @@
 FROM python:3.9-slim-buster
 
 COPY entrypoint.sh /entrypoint.sh
-COPY embargo-monitor.py /embargo-monitor.py
+COPY s3-bucket-usage-exporter.py /s3-bucket-usage-exporter.py
 COPY requirements.txt /requirements.txt
 
 RUN chmod +x /entrypoint.sh
-RUN chmod +x /embargo-monitor.py
+RUN chmod +x /s3-bucket-usage-exporter.py
 
 RUN apt-get update && \
     apt-get install -y curl && \

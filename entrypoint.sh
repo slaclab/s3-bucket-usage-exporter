@@ -1,9 +1,16 @@
 #!/bin/bash
 
-mc alias set rubin-embs3 https://sdfembs3.sdf.slac.stanford.edu $access_key $secret_key
+mc alias set $bucket https://$bucket.sdf.slac.stanford.edu $access_key $secret_key
 
-#mc du rubin-embs3/rubin-summit-users/LSSTComCam/calib/DM-46360 --json
+IFS=',' read -r -a paths_array <<< "$PATHS"
 
-./s3-bucket-usage-exporter.py
+script_args="--bucket_alias $bucket"
+for path in "${paths_array[@]}"; do
+    script_args+=" --path $path"
+done
+
+script_args+=" --sleep $SLEEP_SCHEDULE"
+
+./s3-bucket-usage-exporter.py $script_args
 
 while true; do sleep 5s; done
