@@ -55,6 +55,7 @@ class S3Metrics:
             else:
                 time.sleep(self.sleep)
 
+    @timeit
     def fetch(self):
         q = deque()
         for item in self.path:
