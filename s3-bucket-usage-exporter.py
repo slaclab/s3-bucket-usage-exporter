@@ -50,7 +50,7 @@ class S3Metrics:
         while(True):
             current_time = datetime.now(self.pdt) 
             if current_time.hour == 10:
-                self.reset_metrics()
+#                self.reset_metrics()
                 self.fetch()
             else:
                 time.sleep(self.sleep)
